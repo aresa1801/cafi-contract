@@ -1,0 +1,180 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+contract CarbonNFT is ERC1155, Ownable {
+    // ================================ STRUCTS ================================
+    struct ProjectData {
+        string projectName;     // Nama proyek carbon
+        string projectType;    // Jenis (e.g., "Reforestation", "Solar Energy")
+        string location;       // Lokasi proyek
+        uint256 carbonReduction; // Jumlah CO2 berkurang (dalam ton)
+        string methodology;    // Metodologi verifikasi (e.g., "Verra VCS")
+        string documentHash;   // IPFS hash untuk dokumen pendukung
+        string imageHash;      // IPFS hash untuk gambar proyek
+    }
+
+    struct Verifier {
+        string name;          // Nama verifikator
+        address wallet;       // Alamat wallet verifikator
+        bool isActive;        // Status aktif/tidak
+    }
+
+    // ================================ MAPPINGS ================================
+    mapping(uint256 => ProjectData) public projects;       // ID NFT => Data Proyek
+    mapping(address => Verifier) public verifiers;         // Wallet => Data Verifikator
+    mapping(uint256 => mapping(address => bool)) public approvals; // Persetujuan NFT
+
+    // ================================ STATE VARIABLES ================================
+    uint256 public mintFee = 1000 * 1e18; // Biaya mint (dalam CAFI, bisa diubah owner)
+    address public taxWallet;             // Wallet penerima pajak (10%)
+    address public managementWallet;      // Wallet penerima manajemen (70%)
+    address public cafiToken;             // Alamat token CAFI
+    bool public autoApproveEnabled = true;// Jika true, owner bisa auto-approve mint
+
+    uint256 private _currentTokenId = 1;  // Counter ID NFT
+
+    // ================================ EVENTS ================================
+    event VerifierAdded(string name, address wallet);    // Saat verifikator ditambah
+    event VerifierRemoved(address wallet);               // Saat verifikator dihapus
+    event ProjectMinted(uint256 tokenId, address minter, string projectName); // Saat NFT dibuat
+    event ApprovalChanged(uint256 tokenId, address verifier, bool approved);  // Saat status persetujuan berubah
+
+    // ================================ CONSTRUCTOR ================================
+    constructor(
+        string memory _metadataURI, // URI untuk metadata ERC-1155
+        address _cafiToken,
+        address _taxWallet,
+        address _managementWallet
+    ) 
+        ERC1155(_metadataURI)  // Berikan URI ke constructor ERC1155
+        Ownable(msg.sender)     // Set deployer sebagai pemilik awal
+    {
+        cafiToken = _cafiToken;
+        taxWallet = _taxWallet;
+        managementWallet = _managementWallet;
+    }
+    // ================================ CORE FUNCTIONS ================================
+
+    /**
+     * @notice Buat NFT Carbon baru (butuh persetujuan verifikator)
+     * @param _projectName     Nama proyek
+     * @param _projectType     Jenis proyek (e.g., "Reforestation")
+     * @param _location       Lokasi proyek
+     * @param _carbonReduction Jumlah CO2 berkurang (dalam kg/ton)
+     * @param _methodology     Standar verifikasi (e.g., "Verra VCS")
+     * @param _documentHash    Link dokumen (IPFS)
+     * @param _imageHash       Link gambar (IPFS)
+     * @param _verifierWallet  Alamat verifikator (jika 0x0, pakai auto-approve)
+     */
+    function mintCarbonNFT(
+        string memory _projectName,
+        string memory _projectType,
+        string memory _location,
+        uint256 _carbonReduction,
+        string memory _methodology,
+        string memory _documentHash,
+        string memory _imageHash,
+        address _verifierWallet
+    ) external {
+        require(bytes(_projectName).length > 0, "Nama proyek harus diisi!");
+        require(_carbonReduction > 0, "Jumlah karbon harus > 0!");
+
+        // Transfer biaya mint (dalam CAFI)
+        IERC20(cafiToken).transferFrom(msg.sender, address(this), mintFee);
+        _distributeMintFee(_verifierWallet);
+
+        uint256 tokenId = _currentTokenId++;
+        projects[tokenId] = ProjectData(
+            _projectName,
+            _projectType,
+            _location,
+            _carbonReduction,
+            _methodology,
+            _documentHash,
+            _imageHash
+        );
+
+        // Auto-approve jika aktif atau tidak pakai verifikator
+        if (autoApproveEnabled || _verifierWallet == address(0)) {
+            approvals[tokenId][owner()] = true;
+        } else {
+            require(verifiers[_verifierWallet].isActive, "Verifikator tidak valid!");
+            approvals[tokenId][_verifierWallet] = true;
+        }
+
+        _mint(msg.sender, tokenId, 1, ""); // Mint 1 NFT ke pemanggil
+        emit ProjectMinted(tokenId, msg.sender, _projectName);
+    }
+
+    /**
+     * @notice Bagikan biaya mint ke verifikator, pajak, dan manajemen
+     * @param _verifierWallet Alamat verifikator (jika ada)
+     */
+    function _distributeMintFee(address _verifierWallet) private {
+        uint256 verifierShare = (mintFee * 20) / 100; // 20% untuk verifikator
+        uint256 taxShare = (mintFee * 10) / 100;      // 10% untuk pajak
+        uint256 managementShare = mintFee - verifierShare - taxShare; // 70% manajemen
+
+        if (_verifierWallet != address(0)) {
+            IERC20(cafiToken).transfer(_verifierWallet, verifierShare);
+        } else {
+            // Jika tidak ada verifikator, tambahkan ke manajemen
+            managementShare += verifierShare;
+        }
+
+        IERC20(cafiToken).transfer(taxWallet, taxShare);
+        IERC20(cafiToken).transfer(managementWallet, managementShare);
+    }
+
+    // ================================ VERIFIER MANAGEMENT ================================
+
+    /**
+     * @notice Tambahkan verifikator baru (hanya owner)
+     * @param _name   Nama verifikator
+     * @param _wallet Alamat wallet verifikator
+     */
+    function addVerifier(string memory _name, address _wallet) external onlyOwner {
+        require(_wallet != address(0), "Alamat wallet tidak valid!");
+        verifiers[_wallet] = Verifier(_name, _wallet, true);
+        emit VerifierAdded(_name, _wallet);
+    }
+
+    /**
+     * @notice Hapus verifikator (hanya owner)
+     * @param _wallet Alamat wallet verifikator
+     */
+    function removeVerifier(address _wallet) external onlyOwner {
+        require(verifiers[_wallet].isActive, "Verifikator tidak ditemukan!");
+        delete verifiers[_wallet];
+        emit VerifierRemoved(_wallet);
+    }
+
+    // ================================ ADMIN FUNCTIONS ================================
+
+    /**
+     * @notice Ubah biaya mint (hanya owner)
+     * @param _newFee Biaya baru (dalam CAFI)
+     */
+    function setMintFee(uint256 _newFee) external onlyOwner {
+        mintFee = _newFee;
+    }
+
+    /**
+     * @notice Aktifkan/nonaktifkan auto-approve (hanya owner)
+     */
+    function toggleAutoApprove() external onlyOwner {
+        autoApproveEnabled = !autoApproveEnabled;
+    }
+
+    /**
+     * @notice Estimasi gas untuk minting (untuk frontend)
+     * @return Perkiraan gas yang dibutuhkan
+     */
+    function estimateMintGas() external pure returns (uint256) {
+        return 200_000; // Adjust setelah testing
+    }
+}
