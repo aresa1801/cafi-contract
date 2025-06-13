@@ -13,16 +13,20 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract AutoStaking is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    // Token contracts
     IERC20 public immutable stakingToken;
     IERC20 public rewardToken;
 
+    // Constants
     uint256 public constant SECONDS_PER_YEAR = 365 days;
     uint256 public constant AUTO_COMPOUND_FEE = 50; // 0.5%
-    address public feeReceiver;
+    uint256 public constant MAX_APY = 10000; // 100%
 
+    // Staking parameters
     uint256[3] public lockPeriods = [30 days, 60 days, 90 days];
     uint256[3] public apyRates = [500, 1000, 1500]; // basis points
 
+    // User stakes
     struct StakeInfo {
         uint256 amount;
         uint256 stakeTime;
@@ -35,32 +39,42 @@ contract AutoStaking is Ownable, ReentrancyGuard {
     mapping(address => StakeInfo[]) public stakes;
     mapping(address => uint256) public pendingRewardWithdrawals;
 
+    // Global stats
     uint256 public totalStaked;
     uint256 public rewardPoolBalance;
+    address public feeReceiver;
 
+    // Events
     event Staked(address indexed user, uint256 amount, uint256 periodIndex, bool autoStake);
     event Claimed(address indexed user, uint256 amount, uint256 stakeIndex);
-    event AutoCompounded(address indexed user, uint256 stakeIndex, uint256 compoundedAmount);
+    event WithdrawnRewards(address indexed account, uint256 amount);
     event AutoStakeToggled(address indexed user, uint256 stakeIndex, bool status);
     event RewardTokenUpdated(address indexed newRewardToken);
     event FeeReceiverUpdated(address indexed newFeeReceiver);
     event APYUpdated(uint256 periodIndex, uint256 newAPY);
-    event RewardPoolFundsAdded(uint256 amount);
-    event WithdrawnRewards(address indexed account, uint256 amount);
+    event RewardPoolFundsAdded(address indexed sender, uint256 amount);
+    event AutoCompounded(address indexed user, uint256 stakeIndex, uint256 compoundedAmount);
+    event ContractPaused(bool indexed isPaused); // 🔥 Penambahan event
 
-    /**
-     * @notice Restricts function to externally owned accounts (EOAs)
-     */
+    // Modifiers
     modifier onlyEOA() {
-        require(tx.origin == msg.sender, "Caller must be EOA");
+        require(tx.origin == msg.sender, "Only EOA can call");
         _;
     }
+
+    modifier whenNotPaused() {
+        require(!paused, "Contract paused");
+        _;
+    }
+
+    // Paused state
+    bool public paused;
 
     constructor(
         address _stakingTokenAddress,
         address _rewardTokenAddress,
         address _feeReceiver
-    ) Ownable(msg.sender) {
+    ) Ownable(msg.sender) ReentrancyGuard() {
         require(_stakingTokenAddress != address(0), "Invalid staking token");
         require(_rewardTokenAddress != address(0), "Invalid reward token");
         require(_feeReceiver != address(0), "Invalid fee receiver");
@@ -70,13 +84,11 @@ contract AutoStaking is Ownable, ReentrancyGuard {
         feeReceiver = _feeReceiver;
     }
 
+    // ===================== Core Functions =====================
     /**
      * @notice Stake tokens for a fixed period
-     * @param amount Amount of tokens to stake
-     * @param periodIndex Index of the lock period (0, 1, or 2)
-     * @param autoStake Whether to enable auto-staking after unlock
      */
-    function stake(uint256 amount, uint256 periodIndex, bool autoStake) external nonReentrant onlyEOA {
+    function stake(uint256 amount, uint256 periodIndex, bool autoStake) external nonReentrant onlyEOA whenNotPaused {
         require(periodIndex < lockPeriods.length, "Invalid period index");
         require(amount > 0, "Zero amount");
 
@@ -100,8 +112,6 @@ contract AutoStaking is Ownable, ReentrancyGuard {
 
     /**
      * @notice Calculate accrued reward for a stake
-     * @param account Address of staker
-     * @param stakeIndex Index of stake
      */
     function calculateReward(address account, uint256 stakeIndex) public view returns (uint256) {
         require(account != address(0), "Invalid account");
@@ -117,10 +127,9 @@ contract AutoStaking is Ownable, ReentrancyGuard {
 
         uint256 timeHeld = endTime - info.stakeTime;
         uint256 periodIndex = getPeriodIndex(info.unlockTime - info.stakeTime);
-        uint256 apy = apyRates[periodIndex];
-
         uint256 principal = info.amount + info.compoundedAmount;
-        return (principal * apy * timeHeld) / (10000 * SECONDS_PER_YEAR);
+
+        return (principal * apyRates[periodIndex] * timeHeld) / (10000 * SECONDS_PER_YEAR);
     }
 
     /**
@@ -137,12 +146,9 @@ contract AutoStaking is Ownable, ReentrancyGuard {
 
     /**
      * @notice Claim reward for a specific stake
-     * @param stakeIndex Index of stake
      */
-    function claimReward(uint256 stakeIndex) external nonReentrant onlyEOA {
+    function claimReward(uint256 stakeIndex) external nonReentrant onlyEOA whenNotPaused {
         address account = msg.sender;
-        require(stakeIndex < stakes[account].length, "Invalid stake index");
-
         StakeInfo storage info = stakes[account][stakeIndex];
         require(!info.claimed, "Already claimed");
         require(block.timestamp >= info.unlockTime, "Still locked");
@@ -171,20 +177,20 @@ contract AutoStaking is Ownable, ReentrancyGuard {
     /**
      * @notice Withdraw pending rewards
      */
-    function withdrawRewards() external nonReentrant {
+    function withdrawRewards() external nonReentrant whenNotPaused {
         uint256 amount = pendingRewardWithdrawals[msg.sender];
         require(amount > 0, "No rewards to withdraw");
 
         pendingRewardWithdrawals[msg.sender] = 0;
         rewardToken.safeTransfer(msg.sender, amount);
+
         emit WithdrawnRewards(msg.sender, amount);
     }
 
     /**
      * @notice Toggle auto-staking for a stake
-     * @param stakeIndex Index of stake
      */
-    function toggleAutoStake(uint256 stakeIndex) external {
+    function toggleAutoStake(uint256 stakeIndex) external whenNotPaused {
         address account = msg.sender;
         require(stakeIndex < stakes[account].length, "Invalid stake index");
 
@@ -197,9 +203,8 @@ contract AutoStaking is Ownable, ReentrancyGuard {
 
     /**
      * @notice Compound reward into new stake
-     * @param stakeIndex Index of stake
      */
-    function compoundReward(uint256 stakeIndex) external nonReentrant onlyEOA {
+    function compoundReward(uint256 stakeIndex) external nonReentrant onlyEOA whenNotPaused {
         address account = msg.sender;
         require(stakeIndex < stakes[account].length, "Invalid stake index");
 
@@ -212,7 +217,7 @@ contract AutoStaking is Ownable, ReentrancyGuard {
         require(rewardPoolBalance >= reward, "Insufficient reward pool");
 
         info.stakeTime = block.timestamp;
-        info.unlockTime = block.timestamp + (info.unlockTime - info.stakeTime); // same period
+        info.unlockTime = block.timestamp + (info.unlockTime - info.stakeTime); // Same period
         info.compoundedAmount += reward;
         rewardPoolBalance -= reward;
 
@@ -221,45 +226,50 @@ contract AutoStaking is Ownable, ReentrancyGuard {
 
     /**
      * @notice Add funds to reward pool
-     * @param amount Amount to add
      */
     function addRewardPoolFunds(uint256 amount) external onlyOwner {
         require(amount > 0, "Zero amount");
         rewardToken.safeTransferFrom(msg.sender, address(this), amount);
         rewardPoolBalance += amount;
-        emit RewardPoolFundsAdded(amount);
+
+        emit RewardPoolFundsAdded(msg.sender, amount);
     }
 
     /**
      * @notice Update APY rate for a period
-     * @param periodIndex Index of period
-     * @param newAPY New APY in basis points
      */
     function setAPY(uint256 periodIndex, uint256 newAPY) external onlyOwner {
         require(periodIndex < lockPeriods.length, "Invalid period index");
-        require(newAPY <= 10000, "APY too high"); // Max 100%
+        require(newAPY <= MAX_APY, "APY too high"); // Max 100%
+
         apyRates[periodIndex] = newAPY;
         emit APYUpdated(periodIndex, newAPY);
     }
 
     /**
      * @notice Update reward token address
-     * @param newRewardToken New reward token address
      */
     function updateRewardToken(address newRewardToken) external onlyOwner {
-        require(newRewardToken != address(0), "Invalid reward token");
+        require(newRewardToken != address(0), "Zero address not allowed");
         rewardToken = IERC20(newRewardToken);
         emit RewardTokenUpdated(newRewardToken);
     }
 
     /**
      * @notice Update fee receiver address
-     * @param newFeeReceiver New fee receiver address
      */
     function updateFeeReceiver(address newFeeReceiver) external onlyOwner {
-        require(newFeeReceiver != address(0), "Invalid fee receiver");
+        require(newFeeReceiver != address(0), "Zero address not allowed");
         feeReceiver = newFeeReceiver;
         emit FeeReceiverUpdated(newFeeReceiver);
+    }
+
+    /**
+     * @notice Toggle contract pause
+     */
+    function togglePause() external onlyOwner {
+        paused = !paused;
+        emit ContractPaused(paused);
     }
 
     /**
@@ -267,5 +277,34 @@ contract AutoStaking is Ownable, ReentrancyGuard {
      */
     function getActiveStakes(address user) external view returns (StakeInfo[] memory) {
         return stakes[user];
+    }
+
+    /**
+     * @notice Get current reward pool balance
+     */
+    function getRewardPoolBalance() external view returns (uint256) {
+        return rewardPoolBalance;
+    }
+
+    /**
+     * @notice Get fee receiver address
+     */
+    function getFeeReceiver() external view returns (address) {
+        return feeReceiver;
+    }
+
+    /**
+     * @notice Get lock period in seconds
+     */
+    function getLockPeriod(uint256 index) external view returns (uint256) {
+        require(index < lockPeriods.length, "Invalid period index");
+        return lockPeriods[index];
+    }
+
+    /**
+     * @notice Estimate mint gas
+     */
+    function estimateMintGas() external pure returns (uint256) {
+        return 200_000;
     }
 }
