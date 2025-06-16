@@ -9,17 +9,17 @@
 				"inputs": [
 					{
 						"internalType": "address",
-						"name": "_cafiToken",
+						"name": "rewardTokenAddress",
 						"type": "address"
 					},
 					{
 						"internalType": "address",
-						"name": "_treasuryWallet",
+						"name": "initialFeeCollector",
 						"type": "address"
 					},
 					{
 						"internalType": "address",
-						"name": "_initialOwner",
+						"name": "initialOwner",
 						"type": "address"
 					}
 				],
@@ -69,19 +69,57 @@
 						"type": "address"
 					},
 					{
-						"indexed": false,
+						"indexed": true,
 						"internalType": "uint256",
-						"name": "stakeIndex",
+						"name": "stakeId",
 						"type": "uint256"
 					},
 					{
 						"indexed": false,
 						"internalType": "bool",
-						"name": "status",
+						"name": "isEnabled",
 						"type": "bool"
 					}
 				],
-				"name": "AutoFarmingToggled",
+				"name": "AutoCompoundToggled",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "newFeeBps",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "newCollector",
+						"type": "address"
+					}
+				],
+				"name": "FeeParametersUpdated",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "collector",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "FeesWithdrawn",
 				"type": "event"
 			},
 			{
@@ -90,11 +128,17 @@
 					{
 						"indexed": true,
 						"internalType": "address",
-						"name": "newTreasury",
+						"name": "previousOwner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "newOwner",
 						"type": "address"
 					}
 				],
-				"name": "FeeReceiverUpdated",
+				"name": "OwnershipTransferStarted",
 				"type": "event"
 			},
 			{
@@ -120,32 +164,7 @@
 				"anonymous": false,
 				"inputs": [
 					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "packageId",
-						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "oldAPY",
-						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "newAPY",
-						"type": "uint256"
-					}
-				],
-				"name": "PackageAPYUpdated",
-				"type": "event"
-			},
-			{
-				"anonymous": false,
-				"inputs": [
-					{
-						"indexed": false,
+						"indexed": true,
 						"internalType": "uint256",
 						"name": "packageId",
 						"type": "uint256"
@@ -165,13 +184,26 @@
 					{
 						"indexed": false,
 						"internalType": "uint256",
-						"name": "apy",
+						"name": "apyBps",
 						"type": "uint256"
 					},
 					{
 						"indexed": false,
 						"internalType": "uint256",
 						"name": "minStake",
+						"type": "uint256"
+					}
+				],
+				"name": "PackageConfigured",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "packageId",
 						"type": "uint256"
 					},
 					{
@@ -181,7 +213,20 @@
 						"type": "bool"
 					}
 				],
-				"name": "PackageAdded",
+				"name": "PackageStatusChanged",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					}
+				],
+				"name": "Paused",
 				"type": "event"
 			},
 			{
@@ -194,9 +239,9 @@
 						"type": "address"
 					},
 					{
-						"indexed": false,
+						"indexed": true,
 						"internalType": "uint256",
-						"name": "stakeIndex",
+						"name": "stakeId",
 						"type": "uint256"
 					},
 					{
@@ -219,7 +264,7 @@
 						"type": "address"
 					},
 					{
-						"indexed": false,
+						"indexed": true,
 						"internalType": "uint256",
 						"name": "packageId",
 						"type": "uint256"
@@ -229,9 +274,15 @@
 						"internalType": "uint256",
 						"name": "amount",
 						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "startTime",
+						"type": "uint256"
 					}
 				],
-				"name": "Staked",
+				"name": "StakeCreated",
 				"type": "event"
 			},
 			{
@@ -244,15 +295,15 @@
 						"type": "address"
 					},
 					{
-						"indexed": false,
+						"indexed": true,
 						"internalType": "uint256",
-						"name": "stakeIndex",
+						"name": "stakeId",
 						"type": "uint256"
 					},
 					{
 						"indexed": false,
 						"internalType": "uint256",
-						"name": "amount",
+						"name": "principal",
 						"type": "uint256"
 					},
 					{
@@ -262,71 +313,76 @@
 						"type": "uint256"
 					}
 				],
-				"name": "Unstaked",
+				"name": "StakeWithdrawn",
 				"type": "event"
 			},
 			{
+				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": false,
 						"internalType": "address",
-						"name": "stakeToken",
+						"name": "account",
 						"type": "address"
-					},
+					}
+				],
+				"name": "Unpaused",
+				"type": "event"
+			},
+			{
+				"inputs": [],
+				"name": "BPS_DENOMINATOR",
+				"outputs": [
 					{
 						"internalType": "uint256",
-						"name": "duration",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "apy",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "minStake",
+						"name": "",
 						"type": "uint256"
 					}
 				],
-				"name": "addFarmPackage",
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MAX_FEE_BPS",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "SECONDS_PER_YEAR",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "acceptOwnership",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
 				"inputs": [],
-				"name": "autoFarmingFee",
+				"name": "autoCompoundFeeBps",
 				"outputs": [
 					{
 						"internalType": "uint256",
 						"name": "",
 						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "autoFarmingPool",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "cafiToken",
-				"outputs": [
-					{
-						"internalType": "contract IERC20",
-						"name": "",
-						"type": "address"
 					}
 				],
 				"stateMutability": "view",
@@ -341,11 +397,11 @@
 					},
 					{
 						"internalType": "uint256",
-						"name": "stakeIndex",
+						"name": "stakeId",
 						"type": "uint256"
 					}
 				],
-				"name": "calculateReward",
+				"name": "calculatePendingRewards",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -360,25 +416,17 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "stakeIndex",
+						"name": "stakeId",
 						"type": "uint256"
 					}
 				],
-				"name": "claimReward",
+				"name": "claimStakeRewards",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
 				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"name": "farmPackages",
-				"outputs": [
 					{
 						"internalType": "address",
 						"name": "stakeToken",
@@ -391,18 +439,178 @@
 					},
 					{
 						"internalType": "uint256",
-						"name": "apy",
+						"name": "apyBps",
 						"type": "uint256"
 					},
 					{
 						"internalType": "uint256",
 						"name": "minStake",
 						"type": "uint256"
+					}
+				],
+				"name": "configureNewPackage",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "packageId",
+						"type": "uint256"
 					},
 					{
-						"internalType": "bool",
-						"name": "isActive",
-						"type": "bool"
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "createStake",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "emergencyPause",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "emergencyUnpause",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "feeCollector",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "feePoolBalance",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getActivePackageCount",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "packageId",
+						"type": "uint256"
+					}
+				],
+				"name": "getPackageDetails",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "stakeTokenAddress",
+								"type": "address"
+							},
+							{
+								"internalType": "uint256",
+								"name": "lockDuration",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "apyBps",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "minimumStakeAmount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "bool",
+								"name": "isActive",
+								"type": "bool"
+							}
+						],
+						"internalType": "struct CAFIFarming.FarmPackage",
+						"name": "",
+						"type": "tuple"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "user",
+						"type": "address"
+					}
+				],
+				"name": "getUserStakes",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "uint256",
+								"name": "packageId",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "stakedAmount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "stakeStartTimestamp",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "lastRewardClaimTimestamp",
+								"type": "uint256"
+							},
+							{
+								"internalType": "bool",
+								"name": "isAutoCompounding",
+								"type": "bool"
+							}
+						],
+						"internalType": "struct CAFIFarming.UserStake[]",
+						"name": "",
+						"type": "tuple[]"
 					}
 				],
 				"stateMutability": "view",
@@ -423,100 +631,59 @@
 			},
 			{
 				"inputs": [],
+				"name": "paused",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "pendingOwner",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "renounceOwnership",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
-				"inputs": [
+				"inputs": [],
+				"name": "rewardToken",
+				"outputs": [
 					{
-						"internalType": "uint256",
-						"name": "packageId",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "newAPY",
-						"type": "uint256"
-					}
-				],
-				"name": "setAPY",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "fee",
-						"type": "uint256"
-					}
-				],
-				"name": "setAutoFarmingFee",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "address",
-						"name": "newWallet",
+						"internalType": "contract IERC20",
+						"name": "",
 						"type": "address"
 					}
 				],
-				"name": "setTreasuryWallet",
-				"outputs": [],
-				"stateMutability": "nonpayable",
+				"stateMutability": "view",
 				"type": "function"
 			},
 			{
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "packageId",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "amount",
+						"name": "stakeId",
 						"type": "uint256"
 					}
 				],
-				"name": "stake",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "stakeIndex",
-						"type": "uint256"
-					}
-				],
-				"name": "toggleAutoFarming",
-				"outputs": [],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "packageId",
-						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "isActive",
-						"type": "bool"
-					}
-				],
-				"name": "toggleFarmPackage",
+				"name": "toggleAutoCompound",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -535,46 +702,25 @@
 				"type": "function"
 			},
 			{
-				"inputs": [],
-				"name": "treasuryWallet",
-				"outputs": [
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "stakeIndex",
+						"name": "newFeeBps",
 						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "newCollector",
+						"type": "address"
 					}
 				],
-				"name": "unstake",
+				"name": "updateFeeParameters",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
 				"inputs": [
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"name": "userStakes",
-				"outputs": [
 					{
 						"internalType": "uint256",
 						"name": "packageId",
@@ -582,38 +728,56 @@
 					},
 					{
 						"internalType": "uint256",
-						"name": "amount",
+						"name": "newApyBps",
 						"type": "uint256"
-					},
+					}
+				],
+				"name": "updatePackageAPY",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "startTime",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "lastClaimTime",
+						"name": "packageId",
 						"type": "uint256"
 					},
 					{
 						"internalType": "bool",
-						"name": "isAutoFarming",
+						"name": "isActive",
 						"type": "bool"
 					}
 				],
-				"stateMutability": "view",
+				"name": "updatePackageStatus",
+				"outputs": [],
+				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
 				"inputs": [],
-				"name": "withdrawFees",
+				"name": "withdrawAccumulatedFees",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "stakeId",
+						"type": "uint256"
+					}
+				],
+				"name": "withdrawStake",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
 			}
 		],
 		"devdoc": {
-			"details": "Contract for farming rewards based on staking packages with adjustable APY.",
+			"details": "Features adjustable APY packages with strict security controls",
 			"errors": {
 				"OwnableInvalidOwner(address)": [
 					{
@@ -631,58 +795,42 @@
 					}
 				]
 			},
+			"events": {
+				"Paused(address)": {
+					"details": "Emitted when the pause is triggered by `account`."
+				},
+				"Unpaused(address)": {
+					"details": "Emitted when the pause is lifted by `account`."
+				}
+			},
 			"kind": "dev",
 			"methods": {
+				"acceptOwnership()": {
+					"details": "The new owner accepts the ownership transfer."
+				},
 				"owner()": {
 					"details": "Returns the address of the current owner."
+				},
+				"paused()": {
+					"details": "Returns true if the contract is paused, and false otherwise."
+				},
+				"pendingOwner()": {
+					"details": "Returns the address of the pending owner."
 				},
 				"renounceOwnership()": {
 					"details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby disabling any functionality that is only available to the owner."
 				},
 				"transferOwnership(address)": {
-					"details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+					"details": "Starts the ownership transfer of the contract to a new account. Replaces the pending transfer if there is one. Can only be called by the current owner. Setting `newOwner` to the zero address is allowed; this can be used to cancel an initiated ownership transfer."
 				}
 			},
-			"title": "CAFIFarming",
+			"title": "CAFIFarming - Secure Staking Platform",
 			"version": 1
 		},
 		"userdoc": {
 			"kind": "user",
-			"methods": {
-				"addFarmPackage(address,uint256,uint256,uint256)": {
-					"notice": "Tambahkan paket farming baru"
-				},
-				"calculateReward(address,uint256)": {
-					"notice": "Hitung reward"
-				},
-				"claimReward(uint256)": {
-					"notice": "Klaim reward dari farming"
-				},
-				"setAPY(uint256,uint256)": {
-					"notice": "Atur ulang APY untuk paket tertentu"
-				},
-				"setAutoFarmingFee(uint256)": {
-					"notice": "Set fee untuk auto farming"
-				},
-				"setTreasuryWallet(address)": {
-					"notice": "Update wallet penerima fee"
-				},
-				"stake(uint256,uint256)": {
-					"notice": "Stake token ke farming berdasarkan package ID"
-				},
-				"toggleAutoFarming(uint256)": {
-					"notice": "Toggle mode auto farming"
-				},
-				"toggleFarmPackage(uint256,bool)": {
-					"notice": "Aktif/nonaktifkan paket farming"
-				},
-				"unstake(uint256)": {
-					"notice": "Withdraw stake + reward"
-				},
-				"withdrawFees()": {
-					"notice": "Owner dapat menarik biaya auto farming"
-				}
-			},
+			"methods": {},
+			"notice": "Implements time-locked staking with auto-compounding rewards",
 			"version": 1
 		}
 	},
@@ -710,6 +858,14 @@
 				"dweb:/ipfs/QmfEckWLmZkDDcoWrkEvMWhms66xwTLff9DDhegYpvHo1a"
 			]
 		},
+		"@openzeppelin/contracts/access/Ownable2Step.sol": {
+			"keccak256": "0xdcad8898fda432696597752e8ec361b87d85c82cb258115427af006dacf7128c",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://e2c9d517f0c136d54bd00cd57959d25681d4d6273f5bbbc263afe228303772f0",
+				"dweb:/ipfs/QmReNFjXBiufByiAAzfSQ2SM5r3qeUErn46BmN3yVRvrek"
+			]
+		},
 		"@openzeppelin/contracts/interfaces/IERC1363.sol": {
 			"keccak256": "0x9b6b3e7803bc5f2f8cd7ad57db8ac1def61a9930a5a3107df4882e028a9605d7",
 			"license": "MIT",
@@ -732,6 +888,14 @@
 			"urls": [
 				"bzz-raw://a2608291cb038b388d80b79a06b6118a42f7894ff67b7da10ec0dbbf5b2973ba",
 				"dweb:/ipfs/QmWohqcBLbcxmA4eGPhZDXe5RYMMEEpFq22nfkaUMvTfw1"
+			]
+		},
+		"@openzeppelin/contracts/security/Pausable.sol": {
+			"keccak256": "0x0849d93b16c9940beb286a7864ed02724b248b93e0d80ef6355af5ef15c64773",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://4ddabb16009cd17eaca3143feadf450ac13e72919ebe2ca50e00f61cb78bc004",
+				"dweb:/ipfs/QmSPwPxX7d6TTWakN5jy5wsaGkS1y9TW8fuhGSraMkLk2B"
 			]
 		},
 		"@openzeppelin/contracts/security/ReentrancyGuard.sol": {
@@ -775,11 +939,11 @@
 			]
 		},
 		"Farming.sol": {
-			"keccak256": "0xa47e28aea276752ac53210d4dce4167d5ec194683d4407f2964fd1c828b27913",
+			"keccak256": "0xb56b0ac048e06570d23b0f795ad9ed5bde25f0ca776ea12d1c32c2b7ef67ad7a",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://07e64233381cc18c1f89ad3c8cb39cb35b0c07becc492a342b36959296123274",
-				"dweb:/ipfs/QmYpbz5q1zTxUaPiAjuhgngTwdNGYKV2v3SHkfpw3XcwKc"
+				"bzz-raw://c79af749eedab98da59c76b66a8eaa610949348b0b5f67ef3c96bf0f6c81e39d",
+				"dweb:/ipfs/QmYZ3Xq9SgMcmkR5Zt8ie9Gg3Qhac45J2uy2b9PfYLvKD8"
 			]
 		}
 	},

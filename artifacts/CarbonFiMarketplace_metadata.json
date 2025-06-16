@@ -98,6 +98,12 @@
 						"internalType": "uint256",
 						"name": "pricePerItem",
 						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "listingFee",
+						"type": "uint256"
 					}
 				],
 				"name": "ItemListed",
@@ -135,6 +141,12 @@
 						"internalType": "uint256",
 						"name": "pricePerItem",
 						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "buyFee",
+						"type": "uint256"
 					}
 				],
 				"name": "ItemSold",
@@ -153,6 +165,12 @@
 						"indexed": true,
 						"internalType": "uint256",
 						"name": "tokenId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "refundedFee",
 						"type": "uint256"
 					}
 				],
@@ -175,8 +193,40 @@
 						"type": "address"
 					}
 				],
+				"name": "OwnershipTransferStarted",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "previousOwner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "newOwner",
+						"type": "address"
+					}
+				],
 				"name": "OwnershipTransferred",
 				"type": "event"
+			},
+			{
+				"inputs": [],
+				"name": "FEE_DENOMINATOR",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
 			},
 			{
 				"inputs": [],
@@ -215,6 +265,13 @@
 					}
 				],
 				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "acceptOwnership",
+				"outputs": [],
+				"stateMutability": "nonpayable",
 				"type": "function"
 			},
 			{
@@ -283,7 +340,7 @@
 				"inputs": [
 					{
 						"internalType": "address",
-						"name": "tokenAddress",
+						"name": "token",
 						"type": "address"
 					},
 					{
@@ -366,6 +423,11 @@
 					{
 						"internalType": "uint256",
 						"name": "pricePerItem",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "listingFeePaid",
 						"type": "uint256"
 					}
 				],
@@ -465,6 +527,19 @@
 			},
 			{
 				"inputs": [],
+				"name": "pendingOwner",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "renounceOwnership",
 				"outputs": [],
 				"stateMutability": "nonpayable",
@@ -474,7 +549,7 @@
 				"inputs": [
 					{
 						"internalType": "address",
-						"name": "_feeWallet",
+						"name": "newFeeWallet",
 						"type": "address"
 					}
 				],
@@ -536,8 +611,20 @@
 			},
 			"kind": "dev",
 			"methods": {
+				"acceptOwnership()": {
+					"details": "The new owner accepts the ownership transfer."
+				},
+				"buyItem(address,uint256,uint256)": {
+					"details": "Transfers 99% to seller, 1% to fee wallet, and NFT to buyer"
+				},
+				"listItem(uint256,uint256,uint256)": {
+					"details": "Transfers NFT to escrow and collects 1% fee of (amount × price)"
+				},
 				"owner()": {
 					"details": "Returns the address of the current owner."
+				},
+				"pendingOwner()": {
+					"details": "Returns the address of the pending owner."
 				},
 				"renounceOwnership()": {
 					"details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby disabling any functionality that is only available to the owner."
@@ -546,14 +633,24 @@
 					"details": "See {IERC165-supportsInterface}."
 				},
 				"transferOwnership(address)": {
-					"details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+					"details": "Starts the ownership transfer of the contract to a new account. Replaces the pending transfer if there is one. Can only be called by the current owner. Setting `newOwner` to the zero address is allowed; this can be used to cancel an initiated ownership transfer."
 				}
 			},
 			"version": 1
 		},
 		"userdoc": {
 			"kind": "user",
-			"methods": {},
+			"methods": {
+				"buyItem(address,uint256,uint256)": {
+					"notice": "Buy NFTs with 1% transaction fee"
+				},
+				"cancelListing(uint256)": {
+					"notice": "Cancel listing and refund proportional fee"
+				},
+				"listItem(uint256,uint256,uint256)": {
+					"notice": "List NFTs with 1% listing fee of total value"
+				}
+			},
 			"version": 1
 		}
 	},
@@ -579,6 +676,14 @@
 			"urls": [
 				"bzz-raw://8ed324d3920bb545059d66ab97d43e43ee85fd3bd52e03e401f020afb0b120f6",
 				"dweb:/ipfs/QmfEckWLmZkDDcoWrkEvMWhms66xwTLff9DDhegYpvHo1a"
+			]
+		},
+		"@openzeppelin/contracts/access/Ownable2Step.sol": {
+			"keccak256": "0xdcad8898fda432696597752e8ec361b87d85c82cb258115427af006dacf7128c",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://e2c9d517f0c136d54bd00cd57959d25681d4d6273f5bbbc263afe228303772f0",
+				"dweb:/ipfs/QmReNFjXBiufByiAAzfSQ2SM5r3qeUErn46BmN3yVRvrek"
 			]
 		},
 		"@openzeppelin/contracts/interfaces/IERC1363.sol": {
@@ -678,11 +783,11 @@
 			]
 		},
 		"Carbonfi_Marketplace.sol": {
-			"keccak256": "0x42eb2c36e9d1187ecd23527ab5c7a75baf2ccc0ab7b17f2b5521367f5071dfbf",
+			"keccak256": "0x5c3a65b176ca05f1f8dccce7e1f9307b01789b502fa516cc39417279744d2d9b",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://2a3d17f71f5950ee860a09bee31ae9bfb99f1b96b5bd1cbde0a3dfb695609ba1",
-				"dweb:/ipfs/Qmdy4W3iXFokrh9rS6DUxJFNFDG24JiXnT4DjB9F43jZM3"
+				"bzz-raw://55df041066d3d49936a52a2bcf7209dce9cdfe1e1c5af336c1ca6c88b5c5d7a3",
+				"dweb:/ipfs/QmVZzBGyKtqvSMsWMsyoTPgaaHgVggxEgntDVSVQn35hgX"
 			]
 		}
 	},

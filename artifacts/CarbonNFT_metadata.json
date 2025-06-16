@@ -9,7 +9,7 @@
 				"inputs": [
 					{
 						"internalType": "string",
-						"name": "_metadataURI",
+						"name": "_baseURI",
 						"type": "string"
 					},
 					{
@@ -25,6 +25,11 @@
 					{
 						"internalType": "address",
 						"name": "_managementWallet",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "_initialOwner",
 						"type": "address"
 					}
 				],
@@ -233,13 +238,19 @@
 				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
 						"indexed": false,
-						"internalType": "bool",
-						"name": "status",
-						"type": "bool"
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
 					}
 				],
-				"name": "ContractPaused",
+				"name": "EmergencyWithdraw",
 				"type": "event"
 			},
 			{
@@ -248,11 +259,30 @@
 					{
 						"indexed": false,
 						"internalType": "uint256",
-						"name": "newFee",
+						"name": "newFeePerTon",
 						"type": "uint256"
 					}
 				],
 				"name": "MintFeeUpdated",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "previousOwner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "newOwner",
+						"type": "address"
+					}
+				],
+				"name": "OwnershipTransferStarted",
 				"type": "event"
 			},
 			{
@@ -278,6 +308,19 @@
 				"anonymous": false,
 				"inputs": [
 					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					}
+				],
+				"name": "Paused",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
 						"indexed": true,
 						"internalType": "uint256",
 						"name": "tokenId",
@@ -286,13 +329,37 @@
 					{
 						"indexed": true,
 						"internalType": "address",
-						"name": "minter",
+						"name": "creator",
 						"type": "address"
 					},
 					{
 						"indexed": false,
 						"internalType": "string",
 						"name": "projectName",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "carbonTons",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "startDate",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "endDate",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "imageCID",
 						"type": "string"
 					}
 				],
@@ -397,6 +464,19 @@
 				"inputs": [
 					{
 						"indexed": false,
+						"internalType": "address",
+						"name": "account",
+						"type": "address"
+					}
+				],
+				"name": "Unpaused",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
 						"internalType": "uint256",
 						"name": "index",
 						"type": "uint256"
@@ -408,7 +488,7 @@
 						"type": "string"
 					},
 					{
-						"indexed": false,
+						"indexed": true,
 						"internalType": "address",
 						"name": "wallet",
 						"type": "address"
@@ -416,6 +496,32 @@
 				],
 				"name": "VerifierUpdated",
 				"type": "event"
+			},
+			{
+				"inputs": [],
+				"name": "MAX_BATCH_SIZE",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MAX_DURATION",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
 			},
 			{
 				"inputs": [],
@@ -444,39 +550,35 @@
 				"type": "function"
 			},
 			{
-				"inputs": [
+				"inputs": [],
+				"name": "VERIFIER_COUNT",
+				"outputs": [
 					{
 						"internalType": "uint256",
 						"name": "",
 						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"name": "approvals",
-				"outputs": [
-					{
-						"internalType": "bool",
-						"name": "",
-						"type": "bool"
 					}
 				],
 				"stateMutability": "view",
 				"type": "function"
 			},
 			{
+				"inputs": [],
+				"name": "acceptOwnership",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "_tokenId",
+						"name": "tokenId",
 						"type": "uint256"
 					},
 					{
 						"internalType": "bool",
-						"name": "_approved",
+						"name": "approved",
 						"type": "bool"
 					}
 				],
@@ -551,7 +653,7 @@
 				"name": "cafiToken",
 				"outputs": [
 					{
-						"internalType": "address",
+						"internalType": "contract IERC20",
 						"name": "",
 						"type": "address"
 					}
@@ -560,8 +662,21 @@
 				"type": "function"
 			},
 			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					}
+				],
+				"name": "emergencyWithdraw",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
 				"inputs": [],
-				"name": "estimateMintGas",
+				"name": "getCurrentTokenId",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -569,7 +684,102 @@
 						"type": "uint256"
 					}
 				],
-				"stateMutability": "pure",
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "tokenId",
+						"type": "uint256"
+					}
+				],
+				"name": "getProject",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "projectName",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "projectType",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "location",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "carbonReduction",
+								"type": "uint256"
+							},
+							{
+								"internalType": "string",
+								"name": "methodology",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "documentHash",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "imageCID",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "startDate",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "endDate",
+								"type": "uint256"
+							},
+							{
+								"internalType": "address",
+								"name": "creator",
+								"type": "address"
+							}
+						],
+						"internalType": "struct CarbonNFT.ProjectData",
+						"name": "",
+						"type": "tuple"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "tokenId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "verifier",
+						"type": "address"
+					}
+				],
+				"name": "isApproved",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -630,7 +840,7 @@
 							},
 							{
 								"internalType": "uint256",
-								"name": "carbonReduction",
+								"name": "carbonTons",
 								"type": "uint256"
 							},
 							{
@@ -645,18 +855,23 @@
 							},
 							{
 								"internalType": "string",
-								"name": "imageHash",
+								"name": "imageCID",
 								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "durationDays",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "verifierIndex",
+								"type": "uint256"
 							}
 						],
 						"internalType": "struct CarbonNFT.MintParams",
 						"name": "params",
 						"type": "tuple"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_verifierIndex",
-						"type": "uint256"
 					}
 				],
 				"name": "mintCarbonNFT",
@@ -666,7 +881,7 @@
 			},
 			{
 				"inputs": [],
-				"name": "mintFee",
+				"name": "mintFeePerTon",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -704,49 +919,13 @@
 				"type": "function"
 			},
 			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"name": "projects",
+				"inputs": [],
+				"name": "pendingOwner",
 				"outputs": [
 					{
-						"internalType": "string",
-						"name": "projectName",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "projectType",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "location",
-						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "carbonReduction",
-						"type": "uint256"
-					},
-					{
-						"internalType": "string",
-						"name": "methodology",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "documentHash",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "imageHash",
-						"type": "string"
+						"internalType": "address",
+						"name": "",
+						"type": "address"
 					}
 				],
 				"stateMutability": "view",
@@ -847,11 +1026,11 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "_newFee",
+						"name": "newFee",
 						"type": "uint256"
 					}
 				],
-				"name": "setMintFee",
+				"name": "setMintFeePerTon",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -860,17 +1039,17 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "_index",
+						"name": "index",
 						"type": "uint256"
 					},
 					{
 						"internalType": "string",
-						"name": "_name",
+						"name": "name",
 						"type": "string"
 					},
 					{
 						"internalType": "address",
-						"name": "_wallet",
+						"name": "wallet",
 						"type": "address"
 					}
 				],
@@ -942,7 +1121,7 @@
 				"inputs": [
 					{
 						"internalType": "uint256",
-						"name": "",
+						"name": "tokenId",
 						"type": "uint256"
 					}
 				],
@@ -988,7 +1167,7 @@
 			}
 		],
 		"devdoc": {
-			"details": "ERC1155 NFT contract for carbon offsetting projects with approval mechanism and fee distribution",
+			"details": "Features batch minting, verifier approvals, and fee distribution",
 			"errors": {
 				"ERC1155InsufficientBalance(address,uint256,uint256,uint256)": [
 					{
@@ -1071,6 +1250,9 @@
 				"ApprovalForAll(address,address,bool)": {
 					"details": "Emitted when `account` grants or revokes permission to `operator` to transfer their tokens, according to `approved`."
 				},
+				"Paused(address)": {
+					"details": "Emitted when the pause is triggered by `account`."
+				},
 				"TransferBatch(address,address,address,uint256[],uint256[])": {
 					"details": "Equivalent to multiple {TransferSingle} events, where `operator`, `from` and `to` are the same for all transfers."
 				},
@@ -1079,21 +1261,71 @@
 				},
 				"URI(string,uint256)": {
 					"details": "Emitted when the URI for token type `id` changes to `value`, if it is a non-programmatic URI. If an {URI} event was emitted for `id`, the standard https://eips.ethereum.org/EIPS/eip-1155#metadata-extensions[guarantees] that `value` will equal the value returned by {IERC1155MetadataURI-uri}."
+				},
+				"Unpaused(address)": {
+					"details": "Emitted when the pause is lifted by `account`."
 				}
 			},
 			"kind": "dev",
 			"methods": {
+				"acceptOwnership()": {
+					"details": "The new owner accepts the ownership transfer."
+				},
+				"approveProject(uint256,bool)": {
+					"params": {
+						"approved": "Approval status",
+						"tokenId": "Project token ID"
+					}
+				},
 				"balanceOf(address,uint256)": {
 					"details": "See {IERC1155-balanceOf}."
 				},
 				"balanceOfBatch(address[],uint256[])": {
 					"details": "See {IERC1155-balanceOfBatch}. Requirements: - `accounts` and `ids` must have the same length."
 				},
+				"emergencyWithdraw(address)": {
+					"params": {
+						"token": "Token contract address"
+					}
+				},
+				"getCurrentTokenId()": {
+					"returns": {
+						"_0": "Current token ID"
+					}
+				},
+				"getProject(uint256)": {
+					"params": {
+						"tokenId": "Project token ID"
+					},
+					"returns": {
+						"_0": "Project data structure"
+					}
+				},
+				"isApproved(uint256,address)": {
+					"params": {
+						"tokenId": "Project token ID",
+						"verifier": "Verifier address"
+					},
+					"returns": {
+						"_0": "Approval status"
+					}
+				},
 				"isApprovedForAll(address,address)": {
 					"details": "See {IERC1155-isApprovedForAll}."
 				},
+				"mintCarbonNFT((string,string,string,uint256,string,string,string,uint256,uint256))": {
+					"params": {
+						"params": "MintParams struct containing all minting parameters"
+					}
+				},
 				"owner()": {
 					"details": "Returns the address of the current owner."
+				},
+				"paused()": {
+					"details": "Returns true if the contract is paused, and false otherwise."
+				},
+				"pendingOwner()": {
+					"details": "Returns the address of the pending owner."
 				},
 				"renounceOwnership()": {
 					"details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby disabling any functionality that is only available to the owner."
@@ -1107,22 +1339,74 @@
 				"setApprovalForAll(address,bool)": {
 					"details": "See {IERC1155-setApprovalForAll}."
 				},
+				"setMintFeePerTon(uint256)": {
+					"params": {
+						"newFee": "New fee amount in CAFI tokens (per ton)"
+					}
+				},
+				"setVerifier(uint256,string,address)": {
+					"params": {
+						"index": "Verifier index (0-6)",
+						"name": "Verifier organization name",
+						"wallet": "Verifier wallet address"
+					}
+				},
 				"supportsInterface(bytes4)": {
 					"details": "See {IERC165-supportsInterface}."
 				},
 				"transferOwnership(address)": {
-					"details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
+					"details": "Starts the ownership transfer of the contract to a new account. Replaces the pending transfer if there is one. Can only be called by the current owner. Setting `newOwner` to the zero address is allowed; this can be used to cancel an initiated ownership transfer."
 				},
 				"uri(uint256)": {
-					"details": "See {IERC1155MetadataURI-uri}. This implementation returns the same URI for *all* token types. It relies on the token type ID substitution mechanism https://eips.ethereum.org/EIPS/eip-1155#metadata[defined in the ERC]. Clients calling this function must replace the `\\{id\\}` substring with the actual token type ID."
+					"params": {
+						"tokenId": "Project token ID"
+					},
+					"returns": {
+						"_0": "Metadata URI string"
+					}
 				}
 			},
-			"title": "CarbonNFT",
+			"title": "CarbonNFT - Carbon Offset Certificate",
 			"version": 1
 		},
 		"userdoc": {
 			"kind": "user",
-			"methods": {},
+			"methods": {
+				"approveProject(uint256,bool)": {
+					"notice": "Approve/reject a project"
+				},
+				"emergencyWithdraw(address)": {
+					"notice": "Emergency withdraw tokens"
+				},
+				"getCurrentTokenId()": {
+					"notice": "Get current token ID counter"
+				},
+				"getProject(uint256)": {
+					"notice": "Get project details"
+				},
+				"isApproved(uint256,address)": {
+					"notice": "Check verifier approval status"
+				},
+				"mintCarbonNFT((string,string,string,uint256,string,string,string,uint256,uint256))": {
+					"notice": "Mint new carbon offset certificates using params struct"
+				},
+				"setMintFeePerTon(uint256)": {
+					"notice": "Update minting fee per ton"
+				},
+				"setVerifier(uint256,string,address)": {
+					"notice": "Add or update a verifier"
+				},
+				"toggleAutoApprove()": {
+					"notice": "Toggle automatic approval bypass"
+				},
+				"togglePause()": {
+					"notice": "Pause/unpause contract"
+				},
+				"uri(uint256)": {
+					"notice": "Get NFT metadata URI"
+				}
+			},
+			"notice": "ERC1155 implementation where 1 token = 1 ton of CO₂ offset",
 			"version": 1
 		}
 	},
@@ -1148,6 +1432,14 @@
 			"urls": [
 				"bzz-raw://8ed324d3920bb545059d66ab97d43e43ee85fd3bd52e03e401f020afb0b120f6",
 				"dweb:/ipfs/QmfEckWLmZkDDcoWrkEvMWhms66xwTLff9DDhegYpvHo1a"
+			]
+		},
+		"@openzeppelin/contracts/access/Ownable2Step.sol": {
+			"keccak256": "0xdcad8898fda432696597752e8ec361b87d85c82cb258115427af006dacf7128c",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://e2c9d517f0c136d54bd00cd57959d25681d4d6273f5bbbc263afe228303772f0",
+				"dweb:/ipfs/QmReNFjXBiufByiAAzfSQ2SM5r3qeUErn46BmN3yVRvrek"
 			]
 		},
 		"@openzeppelin/contracts/interfaces/IERC1363.sol": {
@@ -1180,6 +1472,14 @@
 			"urls": [
 				"bzz-raw://399594cd8bb0143bc9e55e0f1d071d0d8c850a394fb7a319d50edd55d9ed822b",
 				"dweb:/ipfs/QmbPZzgtT6LEm9CMqWfagQFwETbV1ztpECBB1DtQHrKiRz"
+			]
+		},
+		"@openzeppelin/contracts/security/Pausable.sol": {
+			"keccak256": "0x0849d93b16c9940beb286a7864ed02724b248b93e0d80ef6355af5ef15c64773",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://4ddabb16009cd17eaca3143feadf450ac13e72919ebe2ca50e00f61cb78bc004",
+				"dweb:/ipfs/QmSPwPxX7d6TTWakN5jy5wsaGkS1y9TW8fuhGSraMkLk2B"
 			]
 		},
 		"@openzeppelin/contracts/security/ReentrancyGuard.sol": {
@@ -1294,6 +1594,14 @@
 				"dweb:/ipfs/QmarDJ5hZEgBtCmmrVzEZWjub9769eD686jmzb2XpSU1cM"
 			]
 		},
+		"@openzeppelin/contracts/utils/Strings.sol": {
+			"keccak256": "0x81c274a60a7ae232ae3dc9ff3a4011b4849a853c13b0832cd3351bb1bb2f0dae",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://9da0c20dc74358a2a76330818f3bac9d1e2ce3371aec847b9cbf5d147fbae4f6",
+				"dweb:/ipfs/QmeczhmnFv1hbXKGLwbYXY6Rrytc9a5A2YaRi5QMMgjPnb"
+			]
+		},
 		"@openzeppelin/contracts/utils/introspection/ERC165.sol": {
 			"keccak256": "0xddce8e17e3d3f9ed818b4f4c4478a8262aab8b11ed322f1bf5ed705bb4bd97fa",
 			"license": "MIT",
@@ -1326,12 +1634,20 @@
 				"dweb:/ipfs/QmPFKL2r9CBsMwmUqqdcFPfHZB2qcs9g1HDrPxzWSxomvy"
 			]
 		},
-		"Mint_NFT.sol": {
-			"keccak256": "0xeb7e53d50aac8a2b9d897c7c06209fc5edb58b841cfd2c3606624d1367d8323f",
+		"@openzeppelin/contracts/utils/math/SignedMath.sol": {
+			"keccak256": "0xb1970fac7b64e6c09611e6691791e848d5e3fe410fa5899e7df2e0afd77a99e3",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://4756443f7c3867d50916663910cca240e012766b6980efc64763c9f4bc7a6980",
-				"dweb:/ipfs/Qmcdd3zBg3jCrebj9qxBjHTRYcXS6eFnc7TXoskcSZgBvN"
+				"bzz-raw://db5fbb3dddd8b7047465b62575d96231ba8a2774d37fb4737fbf23340fabbb03",
+				"dweb:/ipfs/QmVUSvooZKEdEdap619tcJjTLcAuH6QBdZqAzWwnAXZAWJ"
+			]
+		},
+		"Mint_NFT.sol": {
+			"keccak256": "0xb0e5749f3f0df915fba0b1ec87084f356e9a42caa3dea51ee752acce33485e9e",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://a98786ed9679e8c75d9b11e10ba3c8465223bb84c7f5c70481294e61b4276b71",
+				"dweb:/ipfs/QmbbDE2vxLAkRUDqif2wD7GbxGzLWi1uzrJfbApo4rBJtR"
 			]
 		}
 	},

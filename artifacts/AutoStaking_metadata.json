@@ -158,6 +158,19 @@
 				"inputs": [
 					{
 						"indexed": true,
+						"internalType": "bool",
+						"name": "isPaused",
+						"type": "bool"
+					}
+				],
+				"name": "ContractPaused",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
 						"internalType": "address",
 						"name": "newFeeReceiver",
 						"type": "address"
@@ -188,6 +201,12 @@
 			{
 				"anonymous": false,
 				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "sender",
+						"type": "address"
+					},
 					{
 						"indexed": false,
 						"internalType": "uint256",
@@ -264,6 +283,19 @@
 			{
 				"inputs": [],
 				"name": "AUTO_COMPOUND_FEE",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MAX_APY",
 				"outputs": [
 					{
 						"internalType": "uint256",
@@ -371,6 +403,19 @@
 			},
 			{
 				"inputs": [],
+				"name": "estimateMintGas",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "feeReceiver",
 				"outputs": [
 					{
@@ -434,6 +479,51 @@
 				"type": "function"
 			},
 			{
+				"inputs": [],
+				"name": "getFeeReceiver",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "index",
+						"type": "uint256"
+					}
+				],
+				"name": "getLockPeriod",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "getRewardPoolBalance",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
 				"inputs": [
 					{
 						"internalType": "uint256",
@@ -460,6 +550,19 @@
 						"internalType": "address",
 						"name": "",
 						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "paused",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "",
+						"type": "bool"
 					}
 				],
 				"stateMutability": "view",
@@ -635,6 +738,13 @@
 			},
 			{
 				"inputs": [],
+				"name": "togglePause",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
 				"name": "totalStaked",
 				"outputs": [
 					{
@@ -714,63 +824,14 @@
 			},
 			"kind": "dev",
 			"methods": {
-				"addRewardPoolFunds(uint256)": {
-					"params": {
-						"amount": "Amount to add"
-					}
-				},
-				"calculateReward(address,uint256)": {
-					"params": {
-						"account": "Address of staker",
-						"stakeIndex": "Index of stake"
-					}
-				},
-				"claimReward(uint256)": {
-					"params": {
-						"stakeIndex": "Index of stake"
-					}
-				},
-				"compoundReward(uint256)": {
-					"params": {
-						"stakeIndex": "Index of stake"
-					}
-				},
 				"owner()": {
 					"details": "Returns the address of the current owner."
 				},
 				"renounceOwnership()": {
 					"details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby disabling any functionality that is only available to the owner."
 				},
-				"setAPY(uint256,uint256)": {
-					"params": {
-						"newAPY": "New APY in basis points",
-						"periodIndex": "Index of period"
-					}
-				},
-				"stake(uint256,uint256,bool)": {
-					"params": {
-						"amount": "Amount of tokens to stake",
-						"autoStake": "Whether to enable auto-staking after unlock",
-						"periodIndex": "Index of the lock period (0, 1, or 2)"
-					}
-				},
-				"toggleAutoStake(uint256)": {
-					"params": {
-						"stakeIndex": "Index of stake"
-					}
-				},
 				"transferOwnership(address)": {
 					"details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
-				},
-				"updateFeeReceiver(address)": {
-					"params": {
-						"newFeeReceiver": "New fee receiver address"
-					}
-				},
-				"updateRewardToken(address)": {
-					"params": {
-						"newRewardToken": "New reward token address"
-					}
 				}
 			},
 			"title": "AutoStaking",
@@ -791,8 +852,20 @@
 				"compoundReward(uint256)": {
 					"notice": "Compound reward into new stake"
 				},
+				"estimateMintGas()": {
+					"notice": "Estimate mint gas"
+				},
 				"getActiveStakes(address)": {
 					"notice": "Get active stakes for an account"
+				},
+				"getFeeReceiver()": {
+					"notice": "Get fee receiver address"
+				},
+				"getLockPeriod(uint256)": {
+					"notice": "Get lock period in seconds"
+				},
+				"getRewardPoolBalance()": {
+					"notice": "Get current reward pool balance"
 				},
 				"setAPY(uint256,uint256)": {
 					"notice": "Update APY rate for a period"
@@ -802,6 +875,9 @@
 				},
 				"toggleAutoStake(uint256)": {
 					"notice": "Toggle auto-staking for a stake"
+				},
+				"togglePause()": {
+					"notice": "Toggle contract pause"
 				},
 				"updateFeeReceiver(address)": {
 					"notice": "Update fee receiver address"
@@ -905,11 +981,11 @@
 			]
 		},
 		"Staking.sol": {
-			"keccak256": "0x38b6be92032b3b514f3197b7b3bfbe0375e021c1031b2216e27d2f779b9f1409",
+			"keccak256": "0x407c5df4eee6964518e875b03b6f98ec6a892af1ccc819745b2aa6afdec77fc5",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://9780f4d6feb2471dd4fd88e3ddb0d8e48878e1b8600af8af8222e1dfd3fee458",
-				"dweb:/ipfs/QmYtrr7nB7Ac9nDoUZXcVKJLjMcsZJhHqUnHAu7dZhnC3v"
+				"bzz-raw://4d6c3e0cba8c3037599357b83722f602a9a07133f9319e5d62fc73e32b1e6f02",
+				"dweb:/ipfs/QmV8ZrXDgMmoKLUjz6hc5V65QdALa3M7BHyNhibZr8bjue"
 			]
 		}
 	},
